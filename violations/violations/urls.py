@@ -13,14 +13,14 @@ Including another URLconf
     1. Add an import:  from blog import urls as blog_urls
     2. Add a URL to urlpatterns:  url(r'^blog/', include(blog_urls))
 """
-from django.conf.urls import include, url
-from django.contrib import admin
-
-
-from django.contrib.auth.models import User
+from django.conf.urls import patterns, include, url
+from rest_framework.urlpatterns import format_suffix_patterns
 from rest_framework import routers, serializers, viewsets
 
-from .views import violation_data, ViolationData
+from django.contrib import admin
+from django.contrib.auth.models import User
+
+from . import views
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
@@ -38,16 +38,22 @@ router.register(r'users', UserViewSet)
 
 
 urlpatterns = [
-	url(r'^', include(router.urls)),
-    url(r'^admin/', include(admin.site.urls)),
+    url(r'^', include(router.urls)),
+    #url(r'^admin/', include(admin.site.urls)),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
-	url(r'^types/', include('types_vio.urls'), name='violations.types'), ## -- Link to Types urls.py -- ##
-    
-    #url(r'^violations/$', ViolationData.as_view()), ## -- Link to Violation functions -- ##
-    url(r'^violations/', violation_data, name='violations.violation'), ## -- Link to Violation functions -- ##
-    
-    url(r'^actions/', include('actions.urls'), name='violations.actions'), ## -- Link to Actions urls.py -- ##
-    url(r'^comments/', include('comments.urls'), name='violations.comments'), ## -- Link to Comments urls.py -- ##
+    ## -- Link to Types urls.py -- ##
+    url(r'^types/view/$', views.view_types, name="types_vio.view"),
+    url(r'^types/add/$', views.violation_types, name="types_vio.add"),
 
+    url(r'^violations/$', views.ViolationData.as_view()), ## -- Link to Violation functions -- ##
+    #url(r'^violations/', views.violation_data, name='violations.violation'), ## -- Link to Violation functions -- ##
+    
+    ## -- Link to Actions urls.py -- ##
+    url(r'^actions/view/$', views.ViewActionData.as_view(), name="actions.view"),
+    url(r'^actions/add/$', views.SetActionData.as_view(), name="actions.add"),
+
+    ## -- Link to Comments urls.py -- ##
+    url(r'^comments/view/$', views.ViewCommentData.as_view(), name="comments.view"),
+    url(r'^comments/add/$', views.SetCommentData.as_view(), name="comments.add"),
 ]
