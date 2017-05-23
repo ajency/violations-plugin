@@ -54,14 +54,14 @@ class ViolationSerializer(serializers.Serializer):
 	vio_type = serializers.CharField(required=True, allow_blank=False, max_length=100)
 	who_id = serializers.IntegerField(min_value=1)
 	who_type = serializers.CharField(required=True, allow_blank=False, max_length=100)
-	who_meta = serializers.JSONField(binary=False)
+	who_meta = serializers.CharField(required=False, allow_blank=False, max_length=5000)#serializers.JSONField(binary=False)
 	whom_id = serializers.IntegerField(min_value=1)
 	whom_type = serializers.CharField(required=True, allow_blank=False, max_length=100)
-	whom_meta = serializers.JSONField(binary=False)
-	cc_list = serializers.ListField(child=serializers.IntegerField(min_value=0), min_length=0)
-	cc_list_meta = serializers.ListField(child=serializers.JSONField(binary=False), min_length=0)
-	bcc_list = serializers.ListField(child=serializers.IntegerField(min_value=0), min_length=0)
-	bcc_list_meta = serializers.ListField(child=serializers.JSONField(binary=False), min_length=0)
+	whom_meta = serializers.CharField(required=False, allow_blank=False, max_length=5000)#serializers.JSONField(binary=False)
+	cc_list = serializers.ListField(child=serializers.IntegerField(min_value=0))#, min_length=0)
+	cc_list_meta = serializers.ListField(child=serializers.CharField(required=False, allow_blank=False, max_length=5000))#, min_length=0)#serializers.ListField(child=serializers.JSONField(binary=False))#, min_length=0)
+	bcc_list = serializers.ListField(child=serializers.IntegerField(min_value=0))#, min_length=0)
+	bcc_list_meta = serializers.ListField(child=serializers.CharField(required=False, allow_blank=False, max_length=5000))#, min_length=0)#serializers.ListField(child=serializers.JSONField(binary=False))#, min_length=0)
 	status = serializers.CharField(required=True, allow_blank=False, max_length=100)
 	violation_nature = serializers.CharField(required=False, allow_blank=False, max_length=100)
 
@@ -118,7 +118,7 @@ class ViolationSerializer(serializers.Serializer):
 class CommentSerializer(serializers.Serializer):
 	violation_id = serializers.IntegerField(min_value=1)
 	who_id = serializers.IntegerField(min_value=1)
-	who_meta = serializers.JSONField(binary=False)
+	who_meta = serializers.CharField(required=False, allow_blank=False, max_length=5000)#serializers.JSONField(binary=False)
 	comment = serializers.CharField(required=True, allow_blank=True, max_length=100)
 
 	def validate(self, data):
@@ -159,9 +159,9 @@ class CommentSerializer(serializers.Serializer):
 class ActionSerializer(serializers.Serializer):
 	vio_id = serializers.IntegerField(min_value=1)
 	who_id = serializers.IntegerField(required=True, min_value=1)
-	who_meta = serializers.JSONField(binary=False)
+	who_meta = serializers.CharField(required=False, allow_blank=False, max_length=5000)#serializers.JSONField(binary=False)
 	what = serializers.CharField(required=True, allow_blank=False, max_length=100)
-	what_meta = serializers.JSONField(binary=False)
+	what_meta = serializers.CharField(required=False, allow_blank=False, max_length=5000)#serializers.JSONField(binary=False)
 
 	def validate(self, data):
 		list_param = ['vio_id', 'who_id', 'what', 'what_meta']
