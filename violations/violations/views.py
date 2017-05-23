@@ -62,6 +62,27 @@ def violation_types(request): ## -- Add/Edit Types in the DB - API format -- ##
 
 	return JsonResponse(response, status=status)
 
+def get_types_data(filters={}):
+	response = {}
+	status = 200
+
+	if 'id' in filters:
+		query_data = Type.objects.filter(id=request.GET.get('id'))
+	else:
+		query_data = Type.objects.all()
+
+	if query_data.exists():
+		json_data = json.loads(serializers.serialize("json", query_data))
+
+		for data in json_data:
+			data.pop('model')			
+		response = {'data':json_data}
+	else:
+		response = {'message':'Invalid request type'}
+		status = 404 ## -- Not Found -- ##
+
+	return {'response': response, 'status':status}
+
 def view_types(request): ## -- View certain / all the Types from the DB - API format -- ##
 	from django.core import serializers
 
@@ -69,18 +90,13 @@ def view_types(request): ## -- View certain / all the Types from the DB - API fo
 	status = 200
 
 	if request.method == 'GET':
+		filters = {}
 		if 'id' in request.GET:
-			query_data = Type.objects.filter(id=request.GET.get('id'))
-		else:
-			query_data = Type.objects.all()
+			filters['id'] = request.GET.get('id')
 
-		if query_data.exists():
-			json_data = json.loads(serializers.serialize("json", query_data))
-
-			response = {'data':json_data}
-		else:
-			response = {'message':'Invalid request type'}
-			status = 404 ## -- Not Found -- ##	
+		data = get_types_data(filters)
+		response = data['response']
+		status = data['status']
 	else:
 		response = {'message':'Invalid request type'}
 		status = 405 ## -- Method not allowed -- ##
@@ -112,6 +128,96 @@ def violation_serializer(data=None): ## -- Method called for saving/updating `Vi
 
 	return {'response': response, 'status':status}
 
+def get_violations_data(filters={}):
+
+	response = {}
+	status = 200
+
+	list_params = ['vio_types', 'who_ids', 'who_types', 'statuses', 'vio_date']
+
+	if 'vio_id' in filters: ## -- If Violation ID is defined, then get that Violation data -- ##
+			query_data = Violation.objects.filter(id=filters['vio_id'])
+	elif filters and any (k in filters for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
+		query_data = Violation.objects
+		if 'vio_types' in filters and filters['vio_types']:
+			query_data = query_data.filter(vio_type__shortcode__in=filters['vio_types'])
+
+		if 'who_ids' in filters and filters['who_ids']:
+			query_data = query_data.filter(who_id__in=filters['who_ids'])
+
+		if 'who_types' in filters and filters['who_types']:
+			query_data = query_data.filter(who_type__in=filters['who_types'])
+
+		if 'statuses' in filters and filters['statuses']:
+			query_data = query_data.filter(status__in=filters['statuses'])
+
+		if 'vio_date' in filters and filters['vio_date']:
+			from datetime import datetime, timedelta
+
+			if '.' in filters['vio_date'][1]: ## -- If date format is "YYYY.MM.DD" -- ##
+				date_format = "%Y.%m.%d"
+			elif '/' in filters['vio_date'][1]: ## -- If date format is "YYYY/MM/DD" -- ##
+				date_format = "%Y/%m/%d"
+			else: ## -- date format is "YYYY-MM-DD" -- ##
+				date_format = "%Y-%m-%d"
+
+			date = datetime.strptime(filters['vio_date'][1], date_format)
+			modified_date = date + timedelta(days = 1)
+			filters['vio_date'][1] = datetime.strftime(modified_date, date_format)
+
+			query_data = query_data.filter(vio_date__range=filters['vio_date'])
+
+		if 'violation_nature' in filters and filters['violation_nature']:
+			query_data = query_data.filter(violation_nature__in=filters['violation_nature'])
+
+	else: ## -- If no filters nor violation ID is defined, then get all the data -- ##
+		query_data = Violation.objects.filter(status='active')## -- Get oldest to new violations that are 'active'-- ##
+		# query_data = Violation.objects.all()
+
+	if 'orderBy' in filters:
+		query_data = query_data.order_by(filters['orderBy']) ## -- Order the Violations data in that order -- ##
+	else:
+		query_data = query_data.order_by('vio_date') ## -- Order by Violation Date from old to new -- ##
+
+	if 'start' in filters and 'length' in filters: ## -- If Pagination is defined, i.e. start Point & number of data -- ##
+		start = filters['start']
+		length = filters['length']
+		sliced_data = query_data[start : start + length]
+	else: ## -- If Pagination not defined, then get 1st 30 data -- ##
+		sliced_data = query_data[:30]
+	
+	## Note: query_data after slicing is transferred to sliced_data as .filter() doesn't work on 'sliced data' i.e. query_data[ start : start + length]
+
+	json_data = json.loads(serializers.serialize("json", sliced_data))
+
+	for data in json_data:
+		data['fields']['vio_type'] = json.loads(serializers.serialize("json", Type.objects.filter(id=data['fields']['vio_type'])))[0] ## -- Get the Type details -- ##
+		data['fields']['vio_type'].pop('model')
+
+		data['fields']['who_meta'] = eval(data['fields']['who_meta']) ## -- Convert string to JSON -- ##
+		data['fields']['whom_meta'] = eval(data['fields']['whom_meta']) ## -- Convert string to JSON -- ##
+		data['fields']['cc_list'] = eval(data['fields']['cc_list']) ## -- Convert from string to Array -- ##
+		data['fields']['bcc_list'] = eval(data['fields']['bcc_list']) ## -- Convert from string to Array -- ##
+		data['fields']['cc_list_meta'] = [ast.literal_eval(value) for value in eval(data['fields']['cc_list_meta'])] ## -- Convert from string to unicode to JSON -- ##
+		data['fields']['bcc_list_meta'] = [ast.literal_eval(value) for value in eval(data['fields']['bcc_list_meta'])] ## -- Convert from string to unicode to JSON -- ##
+		
+		data['actions'] = json.loads(serializers.serialize("json", query_data.filter(id=data['pk'])[0].actions.all())) ## -- Get all the actions related to that Violations -- ##
+		for action in data['actions']: ## -- convert String meta back to JSON meta -- ##
+			action['fields']['who_meta'] = eval(action['fields']['who_meta'])
+			action.pop('model') ## -- Remove the Model Info -- ##
+
+		data['comments'] = json.loads(serializers.serialize("json", query_data.filter(id=data['pk'])[0].comments.all())) ## -- Get all the comments related to that Violations -- ##
+		for comment in data['comments']: ## -- convert String meta back to JSON meta -- ##
+			comment['fields']['who_meta'] = eval(comment['fields']['who_meta'])
+			comment.pop('model') ## -- Remove the Model Info -- ##
+
+		data.pop('model') ## -- Pop/Remove certain details -- ##
+
+	response = {'data':json_data}
+
+	return {'response':response, 'status': status}
+
+
 class ViolationData(APIView):
 	"""
     List all Violations, or create a new violation.
@@ -120,74 +226,45 @@ class ViolationData(APIView):
 	#permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
 	def get(self, request, *args, **kwargs):
+		filters = {}
 		response = {}
 		status = 200
 
 		list_params = ['vio_types', 'who_ids', 'who_types', 'statuses', 'vio_date']
 		
 		if 'vio_id' in request.GET: ## -- If Violation ID is defined, then get that Violation data -- ##
-			query_data = Violation.objects.filter(id=request.GET.get('vio_id'))
+			filters['vio_id'] = request.GET.get('vio_id')
 		elif request.GET and any (k in request.GET for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
 			query_data = Violation.objects
 			if 'vio_types' in request.GET and eval(request.GET.get('vio_types')):
-				query_data = query_data.filter(vio_type__shortcode__in=eval(request.GET.get('vio_types')))
+				filters['vio_types'] = eval(request.GET.get('vio_types'))
 
 			if 'who_ids' in request.GET and eval(request.GET.get('who_ids')):
-				query_data = query_data.filter(who_id__in=eval(request.GET.get('who_ids')))
+				filters['who_ids'] = eval(request.GET.get('who_ids'))
 
 			if 'who_types' in request.GET and eval(request.GET.get('who_types')):
-				query_data = query_data.filter(who_type__in=eval(request.GET.get('who_types')))
+				filters['who_types'] = eval(request.GET.get('who_types'))
 
 			if 'statuses' in request.GET and eval(request.GET.get('statuses')):
-				query_data = query_data.filter(status__in=eval(request.GET.get('statuses')))
+				filters['statuses'] = eval(request.GET.get('statuses'))
 
 			if 'vio_date' in request.GET and eval(request.GET.get('vio_date')):
-				query_data = query_data.filter(vio_date__range=eval(request.GET.get('vio_date')))
+				filters['vio_date'] = eval(request.GET.get('vio_date'))
 
-		else: ## -- If no filters nor violation ID is defined, then get all the data -- ##
-			query_data = Violation.objects.filter(status='active')## -- Get oldest to new violations that are 'active'-- ##
-			# query_data = Violation.objects.all()
+			if 'violation_nature' in filters and filters['violation_nature']: ## -- this field defines if the violation can be prevent(pre-violation) or not (post-violation) -- ##
+				filters['violation_nature'] = eval(request.GET.get('violation_nature'))
 
 		if 'orderBy' in request.GET:
-			query_data = query_data.order_by(request.GET.get('orderBy')) ## -- Order the Violations data in that order -- ##
-		else:
-			query_data = query_data.order_by('vio_date') ## -- Order by Violation Date from old to new -- ##
+			filters['orderBy'] = request.GET.get('orderBy') ## -- Order the Violations data in that order -- ##
 
 		if 'start' in request.GET and 'length' in request.GET: ## -- If Pagination is defined, i.e. start Point & number of data -- ##
-			start = int(request.GET.get('start'))
-			length = int(request.GET.get('length'))
-			sliced_data = query_data[start : start + length]
-		else: ## -- If Pagination not defined, then get 1st 30 data -- ##
-			sliced_data = query_data[:30]
-		
-		## Note: query_data after slicing is transferred to sliced_data as .filter() doesn't work on 'sliced data' i.e. query_data[ start : start + length]
-
-		json_data = json.loads(serializers.serialize("json", sliced_data))
-
-		for data in json_data:
-			data['fields']['vio_type'] = json.loads(serializers.serialize("json", Type.objects.filter(id=data['fields']['vio_type'])))[0] ## -- Get the Type details -- ##
-			data['fields']['vio_type'].pop('model')
-
-			data['fields']['who_meta'] = eval(data['fields']['who_meta']) ## -- Convert string to JSON -- ##
-			data['fields']['whom_meta'] = eval(data['fields']['whom_meta']) ## -- Convert string to JSON -- ##
-			data['fields']['cc_list'] = eval(data['fields']['cc_list']) ## -- Convert from string to Array -- ##
-			data['fields']['bcc_list'] = eval(data['fields']['bcc_list']) ## -- Convert from string to Array -- ##
-			data['fields']['cc_list_meta'] = [ast.literal_eval(value) for value in eval(data['fields']['cc_list_meta'])] ## -- Convert from string to unicode to JSON -- ##
-			data['fields']['bcc_list_meta'] = [ast.literal_eval(value) for value in eval(data['fields']['bcc_list_meta'])] ## -- Convert from string to unicode to JSON -- ##
+			filters['start'] = int(request.GET.get('start'))
+			filters['length'] = int(request.GET.get('length'))
 			
-			data['actions'] = json.loads(serializers.serialize("json", query_data.filter(id=data['pk'])[0].actions.all())) ## -- Get all the actions related to that Violations -- ##
-			for action in data['actions']: ## -- convert String meta back to JSON meta -- ##
-				action['fields']['who_meta'] = eval(action['fields']['who_meta'])
-				action.pop('model') ## -- Remove the Model Info -- ##
+		data = get_violations_data(filters)
 
-			data['comments'] = json.loads(serializers.serialize("json", query_data.filter(id=data['pk'])[0].comments.all())) ## -- Get all the comments related to that Violations -- ##
-			for comment in data['comments']: ## -- convert String meta back to JSON meta -- ##
-				comment['fields']['who_meta'] = eval(comment['fields']['who_meta'])
-				comment.pop('model') ## -- Remove the Model Info -- ##
-
-			data.pop('model') ## -- Pop/Remove certain details -- ##
-
-		response = {'data':json_data}
+		response = data['response']
+		status = data['status']
 
 		return JsonResponse(response, status=status)
 
