@@ -66,8 +66,23 @@ def get_types_data(filters={}):
 	response = {}
 	status = 200
 
+	list_params = ['ids', 'shortcodes', 'serverities', 'serveritys']
+
 	if 'id' in filters:
 		query_data = Type.objects.filter(id=request.GET.get('id'))
+	elif 'shortcode' in filters:
+		query_data = Type.objects.filter(shortcode=request.GET.get('shortcode'))
+	elif filters and any (k in filters for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
+		if 'ids' in filters:
+			query_data = Type.objects.filter(id__in=request.GET.get('ids'))
+
+		if 'shortcodes' in filters:
+			query_data = Type.objects.filter(shortcode__in=request.GET.get('shortcodes'))
+
+		if 'severities' in filters or 'severitys' in filters:
+			if 'severitys' in filters:
+				filters['severities'] = filters['severitys']
+			query_data = Type.objects.filter(severity__in=request.GET.get('severities'))
 	else:
 		query_data = Type.objects.all()
 
@@ -133,7 +148,7 @@ def get_violations_data(filters={}):
 	response = {}
 	status = 200
 
-	list_params = ['vio_types', 'who_ids', 'who_types', 'statuses', 'vio_date']
+	list_params = ['vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_date', 'violation_natures']
 
 	if 'vio_id' in filters: ## -- If Violation ID is defined, then get that Violation data -- ##
 			query_data = Violation.objects.filter(id=filters['vio_id'])
@@ -142,11 +157,21 @@ def get_violations_data(filters={}):
 		if 'vio_types' in filters and filters['vio_types']:
 			query_data = query_data.filter(vio_type__shortcode__in=filters['vio_types'])
 
+		if 'vio_type_severities' in filters and filters['vio_type_severities']: ## -- Get Violations based on Type severity = high / medium / low -- ##
+			query_data = query_data.filter(vio_type__severity__in=filters['vio_type_severities'])
+
 		if 'who_ids' in filters and filters['who_ids']:
 			query_data = query_data.filter(who_id__in=filters['who_ids'])
 
 		if 'who_types' in filters and filters['who_types']:
 			query_data = query_data.filter(who_type__in=filters['who_types'])
+
+		if 'whom_types' in request.GET and eval(request.GET.get('whom_types')):
+			query_data = query_data.filter(whom_type__in=eval(request.GET.get('whom_types')))
+
+			## -- Search 'whom_id' only if 'whom_types' are defined as there can be conflict of ID's hence Type & ID together makes the whom data unique -- ##
+			if 'whom_ids' in request.GET and eval(request.GET.get('whom_ids')):
+				query_data = query_data.filter(whom_type__in=eval(request.GET.get('whom_ids')))
 
 		if 'statuses' in filters and filters['statuses']:
 			query_data = query_data.filter(status__in=filters['statuses'])
@@ -167,8 +192,8 @@ def get_violations_data(filters={}):
 
 			query_data = query_data.filter(vio_date__range=filters['vio_date'])
 
-		if 'violation_nature' in filters and filters['violation_nature']:
-			query_data = query_data.filter(violation_nature__in=filters['violation_nature'])
+		if 'violation_natures' in filters and filters['violation_nature']:
+			query_data = query_data.filter(violation_nature__in=filters['violation_natures'])
 
 	else: ## -- If no filters nor violation ID is defined, then get all the data -- ##
 		query_data = Violation.objects.filter(status='active')## -- Get oldest to new violations that are 'active'-- ##
@@ -291,12 +316,16 @@ def violation_data(request):
 	status=200
 	
 	if request.method == 'GET':
-		list_params = ['vio_types', 'who_ids', 'who_types', 'statuses', 'vio_date']
+		list_params = ['vio_ids', 'vio_types', 'who_ids', 'who_types', 'statuses', 'vio_date', 'whom_types']
 		
 		if 'vio_id' in request.GET: ## -- If Violation ID is defined, then get that Violation data -- ##
 			query_data = Violation.objects.filter(id=request.GET.get('vio_id'))
 		elif request.GET and any (k in request.GET for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
 			query_data = Violation.objects
+			
+			if 'vio_ids' in request.GET and eval(request.GET.get('vio_ids')): ## -- Get certain Violation data, if an array of IDs are passed -- ##
+				query_data = Violation.objects.filter(id__in=request.GET.get('vio_ids'))
+
 			if 'vio_types' in request.GET and eval(request.GET.get('vio_types')):
 				query_data = query_data.filter(vio_type__shortcode__in=eval(request.GET.get('vio_types')))
 
@@ -306,10 +335,30 @@ def violation_data(request):
 			if 'who_types' in request.GET and eval(request.GET.get('who_types')):
 				query_data = query_data.filter(who_type__in=eval(request.GET.get('who_types')))
 
+			if 'whom_types' in request.GET and eval(request.GET.get('whom_types')):
+				query_data = query_data.filter(whom_type__in=eval(request.GET.get('whom_types')))
+
+				## -- Search 'whom_id' only if 'whom_types' are defined as there can be conflict of ID's hence Type & ID together makes the whom data unique -- ##
+				if 'whom_ids' in request.GET and eval(request.GET.get('whom_ids')):
+					query_data = query_data.filter(whom_type__in=eval(request.GET.get('whom_ids')))
+
 			if 'statuses' in request.GET and eval(request.GET.get('statuses')):
 				query_data = query_data.filter(status__in=eval(request.GET.get('statuses')))
 
 			if 'vio_date' in request.GET and eval(request.GET.get('vio_date')):
+				from datetime import datetime, timedelta
+
+				if '.' in filters['vio_date'][1]: ## -- If date format is "YYYY.MM.DD" -- ##
+					date_format = "%Y.%m.%d"
+				elif '/' in filters['vio_date'][1]: ## -- If date format is "YYYY/MM/DD" -- ##
+					date_format = "%Y/%m/%d"
+				else: ## -- date format is "YYYY-MM-DD" -- ##
+					date_format = "%Y-%m-%d"
+
+				date = datetime.strptime(filters['vio_date'][1], date_format)
+				modified_date = date + timedelta(days = 1) ## -- Increment the End-Date by 1 -- ##
+				filters['vio_date'][1] = datetime.strftime(modified_date, date_format)
+
 				query_data = query_data.filter(vio_date__range=eval(request.GET.get('vio_date')))
 
 		else: ## -- If no filters nor violation ID is defined, then get all the data -- ##
