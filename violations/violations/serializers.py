@@ -18,7 +18,7 @@ class TypeSerializer(serializers.Serializer):
 			
 			if 'severity' in data: ## -- Make the text to lower case on save -- ##
 				data['severity'] = data['severity'].lower()
-			
+
 			try:
 				data['instance'] = Type.objects.get(shortcode=data['shortcode']) ## -- If data exist, then execute Update of it -- ##
 				data['id'] = data['instance'].id ## -- Pass  ID if data exist or not -- ##
@@ -43,7 +43,8 @@ class TypeSerializer(serializers.Serializer):
 		"""
 		#instance.shortcode = validated_data.get('shortcode', instance.shortcode)
 		instance.display = validated_data.get('display', instance.display)
-		instance.severity = validated_data.get('severity', instance.severity).lower()
+		if 'severity' in validated_data:
+			instance.severity = validated_data.get('severity', instance.severity).lower()
 		instance.group = validated_data.get('group', instance.group)
 		instance.configurable_counts = validated_data.get('configurable_counts', instance.configurable_counts)
 		instance.save()
