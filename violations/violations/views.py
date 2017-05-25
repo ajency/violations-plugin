@@ -74,17 +74,18 @@ def get_types_data(filters={}):
 	elif 'shortcode' in filters:
 		query_data = Type.objects.filter(shortcode=filters['shortcode'])
 	elif filters and any (k in filters for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
-		query_data = Type.objects
-		if 'ids' in filters:
+		query_data = Type.objects.all()
+		if 'ids' in filters and filters['ids']:
 			query_data = query_data.filter(id__in=filters['ids'])
 
-		if 'shortcodes' in filters:
+		if 'shortcodes' in filters and filters['shortcodes']:
 			query_data = query_data.filter(shortcode__in=filters['shortcodes'])
 
 		if 'severities' in filters or 'severitys' in filters:
 			if 'severitys' in filters:
 				filters['severities'] = filters['severitys']
-			query_data = query_data.filter(severity__in=filters['severities'])
+			if filters['severities']:
+				query_data = query_data.filter(severity__in=filters['severities'])
 	else:
 		query_data = Type.objects.all()
 
@@ -193,7 +194,7 @@ def get_violations_data(filters={}):
 
 		query_data = Violation.objects.filter(vio_date__range=[filters['vio_date'], extra_date])
 	elif filters and any (k in filters for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
-		query_data = Violation.objects
+		query_data = Violation.objects.all()
 		if 'vio_types' in filters and filters['vio_types']:
 			query_data = query_data.filter(vio_type__shortcode__in=filters['vio_types'])
 
@@ -231,7 +232,7 @@ def get_violations_data(filters={}):
 
 			query_data = query_data.filter(vio_date__range=filters['vio_dates'])
 
-		if 'violation_natures' in filters and filters['violation_nature']:
+		if 'violation_natures' in filters and filters['violation_natures']:
 			query_data = query_data.filter(violation_nature__in=filters['violation_natures'])
 
 	else: ## -- If no filters nor violation ID is defined, then get all the data -- ##
@@ -307,7 +308,6 @@ class ViolationData(APIView):
 		if 'vio_id' in request.GET: ## -- If Violation ID is defined, then get that Violation data -- ##
 			filters['vio_id'] = request.GET.get('vio_id')
 		elif request.GET and any (k in request.GET for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
-			query_data = Violation.objects
 			if 'vio_types' in request.GET and eval(request.GET.get('vio_types')):
 				filters['vio_types'] = eval(request.GET.get('vio_types'))
 
