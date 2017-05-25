@@ -27,10 +27,11 @@ def type_serializer(data=None): ## -- Method called for saving/updating data in 
 	if serializer.is_valid():
 		if 'id' in serializer.validated_data and serializer.validated_data['id']: ## -- If the data exist, then update, else save -- ##
 			serializer.update(serializer.validated_data['instance'], serializer.data) ## -- <Class>.update(<Model/DB_Object_dict>, {Validated_data}) -- ##
+			status = 200
 		else:
 			serializer.save()
+			status = 201
 		response['message'] = serializer.data
-		status = 201
 	else:
 		if 'message' in serializer.errors:
 			response['message'] = serializer.errors['message'][0]
@@ -66,23 +67,24 @@ def get_types_data(filters={}):
 	response = {}
 	status = 200
 
-	list_params = ['ids', 'shortcodes', 'serverities', 'serveritys']
+	list_params = ['ids', 'shortcodes', 'severities', 'severitys']
 
 	if 'id' in filters:
-		query_data = Type.objects.filter(id=request.GET.get('id'))
+		query_data = Type.objects.filter(id=filters['id'])
 	elif 'shortcode' in filters:
-		query_data = Type.objects.filter(shortcode=request.GET.get('shortcode'))
+		query_data = Type.objects.filter(shortcode=filters['shortcode'])
 	elif filters and any (k in filters for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
+		query_data = Type.objects
 		if 'ids' in filters:
-			query_data = Type.objects.filter(id__in=request.GET.get('ids'))
+			query_data = query_data.filter(id__in=filters['ids'])
 
 		if 'shortcodes' in filters:
-			query_data = Type.objects.filter(shortcode__in=request.GET.get('shortcodes'))
+			query_data = query_data.filter(shortcode__in=filters['shortcodes'])
 
 		if 'severities' in filters or 'severitys' in filters:
 			if 'severitys' in filters:
 				filters['severities'] = filters['severitys']
-			query_data = Type.objects.filter(severity__in=request.GET.get('severities'))
+			query_data = query_data.filter(severity__in=filters['severities'])
 	else:
 		query_data = Type.objects.all()
 
@@ -105,9 +107,25 @@ def view_types(request): ## -- View certain / all the Types from the DB - API fo
 	status = 200
 
 	if request.method == 'GET':
+		list_params = ['ids', 'shortcodes', 'severities', 'severitys']
+
 		filters = {}
 		if 'id' in request.GET:
 			filters['id'] = request.GET.get('id')
+		elif 'shortcode' in request.GET:
+			filters['shortcode'] = request.GET.get('shortcode')
+		elif request.GET and any (k in request.GET for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
+			if 'ids' in request.GET:
+				filters['ids'] = eval(request.GET.get('ids'))
+
+			if 'shortcodes' in request.GET:
+				filters['shortcodes'] = eval(request.GET.get('shortcodes'))
+
+			if 'severities' in request.GET or 'severitys' in request.GET:
+				if 'severitys' in filters:
+					filters['severities'] = eval(request.GET.get('severitys'))
+				else:
+					filters['severities'] = eval(request.GET.get('severities'))
 
 		data = get_types_data(filters)
 		response = data['response']
@@ -128,11 +146,12 @@ def violation_serializer(data=None): ## -- Method called for saving/updating `Vi
 	if serializer.is_valid():
 		if 'vio_id' in serializer.validated_data and serializer.validated_data['vio_id']: ## -- If the data exist, then update, else save -- ##
 			serializer.update(serializer.validated_data['instance'], serializer.data) ## -- <Class>.update(<Model/DB_Object_dict>, {Validated_data}) -- ##
+			status = 200
 		else:
 			serializer.save()
+			status = 201
 		
 		response['message'] = serializer.data
-		status = 201
 	else:
 		if 'message' in serializer.errors:
 			response['message'] = serializer.errors['message'][0]
@@ -144,14 +163,17 @@ def violation_serializer(data=None): ## -- Method called for saving/updating `Vi
 	return {'response': response, 'status':status}
 
 def get_violations_data(filters={}):
+	from datetime import datetime, timedelta
 
 	response = {}
 	status = 200
 
-	list_params = ['vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_date', 'violation_natures']
+	list_params = ['vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_dates', 'violation_natures']
 
 	if 'vio_id' in filters: ## -- If Violation ID is defined, then get that Violation data -- ##
 			query_data = Violation.objects.filter(id=filters['vio_id'])
+	elif 'vio_date' in filters: ## -- If Violation date is defined, then get those Violation data -- ##
+			query_data = Violation.objects.filter(vio_date=filters['vio_date'])
 	elif filters and any (k in filters for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
 		query_data = Violation.objects
 		if 'vio_types' in filters and filters['vio_types']:
@@ -166,31 +188,30 @@ def get_violations_data(filters={}):
 		if 'who_types' in filters and filters['who_types']:
 			query_data = query_data.filter(who_type__in=filters['who_types'])
 
-		if 'whom_types' in request.GET and eval(request.GET.get('whom_types')):
-			query_data = query_data.filter(whom_type__in=eval(request.GET.get('whom_types')))
+		if 'whom_types' in filters and filters['whom_types']:
+			query_data = query_data.filter(whom_type__in=filters['whom_types'])
 
 			## -- Search 'whom_id' only if 'whom_types' are defined as there can be conflict of ID's hence Type & ID together makes the whom data unique -- ##
-			if 'whom_ids' in request.GET and eval(request.GET.get('whom_ids')):
-				query_data = query_data.filter(whom_type__in=eval(request.GET.get('whom_ids')))
+			if 'whom_ids' in filters and filters['whom_ids']:
+				query_data = query_data.filter(whom_type__in=filters['whom_ids'])
 
 		if 'statuses' in filters and filters['statuses']:
 			query_data = query_data.filter(status__in=filters['statuses'])
 
-		if 'vio_date' in filters and filters['vio_date']:
-			from datetime import datetime, timedelta
+		if 'vio_dates' in filters and filters['vio_dates']:
 
-			if '.' in filters['vio_date'][1]: ## -- If date format is "YYYY.MM.DD" -- ##
+			if '.' in filters['vio_dates'][1]: ## -- If date format is "YYYY.MM.DD" -- ##
 				date_format = "%Y.%m.%d"
-			elif '/' in filters['vio_date'][1]: ## -- If date format is "YYYY/MM/DD" -- ##
+			elif '/' in filters['vio_dates'][1]: ## -- If date format is "YYYY/MM/DD" -- ##
 				date_format = "%Y/%m/%d"
 			else: ## -- date format is "YYYY-MM-DD" -- ##
 				date_format = "%Y-%m-%d"
 
-			date = datetime.strptime(filters['vio_date'][1], date_format)
+			date = datetime.strptime(filters['vio_dates'][1], date_format)
 			modified_date = date + timedelta(days = 1)
-			filters['vio_date'][1] = datetime.strftime(modified_date, date_format)
+			filters['vio_dates'][1] = datetime.strftime(modified_date, date_format)
 
-			query_data = query_data.filter(vio_date__range=filters['vio_date'])
+			query_data = query_data.filter(vio_date__range=filters['vio_dates'])
 
 		if 'violation_natures' in filters and filters['violation_nature']:
 			query_data = query_data.filter(violation_nature__in=filters['violation_natures'])
@@ -198,11 +219,17 @@ def get_violations_data(filters={}):
 	else: ## -- If no filters nor violation ID is defined, then get all the data -- ##
 		query_data = Violation.objects.filter(status='active')## -- Get oldest to new violations that are 'active'-- ##
 		# query_data = Violation.objects.all()
+	
+	### -- Format data to proper 'YYYY-MM-DD HH:MM:SS' Format -- ###
+	#if query_data: ## -- Gives 'unicode' object has no attribute 'isoformat' error -- ##
+	#	query_data = query_data.extra(select={'vio_date':"to_char(vio_date, 'YYYY-MM-DD HH24:MI:SS')"})
 
 	if 'orderBy' in filters:
 		query_data = query_data.order_by(filters['orderBy']) ## -- Order the Violations data in that order -- ##
 	else:
 		query_data = query_data.order_by('vio_date') ## -- Order by Violation Date from old to new -- ##
+
+	
 
 	if 'start' in filters and 'length' in filters: ## -- If Pagination is defined, i.e. start Point & number of data -- ##
 		start = filters['start']
@@ -216,6 +243,8 @@ def get_violations_data(filters={}):
 	json_data = json.loads(serializers.serialize("json", sliced_data))
 
 	for data in json_data:
+		data['fields']['vio_date'] = datetime.strptime(data['fields']['vio_date'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime("%Y-%m-%d %H:%M:%S") ## -- Set to proper DateTime format -- ##
+
 		data['fields']['vio_type'] = json.loads(serializers.serialize("json", Type.objects.filter(id=data['fields']['vio_type'])))[0] ## -- Get the Type details -- ##
 		data['fields']['vio_type'].pop('model')
 
@@ -255,7 +284,7 @@ class ViolationData(APIView):
 		response = {}
 		status = 200
 
-		list_params = ['vio_types', 'who_ids', 'who_types', 'statuses', 'vio_date']
+		list_params = ['vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_date', 'violation_natures']
 		
 		if 'vio_id' in request.GET: ## -- If Violation ID is defined, then get that Violation data -- ##
 			filters['vio_id'] = request.GET.get('vio_id')
@@ -269,6 +298,12 @@ class ViolationData(APIView):
 
 			if 'who_types' in request.GET and eval(request.GET.get('who_types')):
 				filters['who_types'] = eval(request.GET.get('who_types'))
+
+			if 'whom_ids' in request.GET and eval(request.GET.get('whom_ids')):
+				filters['whom_ids'] = eval(request.GET.get('whom_ids'))
+
+			if 'whom_types' in request.GET and eval(request.GET.get('whom_types')):
+				filters['whom_types'] = eval(request.GET.get('whom_types'))
 
 			if 'statuses' in request.GET and eval(request.GET.get('statuses')):
 				filters['statuses'] = eval(request.GET.get('statuses'))
