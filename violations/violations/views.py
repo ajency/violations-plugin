@@ -200,18 +200,18 @@ def get_violations_data(filters={}):
 		if 'vio_type_severities' in filters and filters['vio_type_severities']: ## -- Get Violations based on Type severity = high / medium / low -- ##
 			query_data = query_data.filter(vio_type__severity__in=filters['vio_type_severities'])
 
-		if 'who_ids' in filters and filters['who_ids']:
+		if 'who_ids' in filters and filters['who_ids']: ## -- Queries in 'who_id' column -- ##
 			query_data = query_data.filter(who_id__in=filters['who_ids'])
 
-		if 'who_types' in filters and filters['who_types']:
+		if 'who_types' in filters and filters['who_types']: ## -- Queries in 'who_type' column -- ##
 			query_data = query_data.filter(who_type__in=filters['who_types'])
 
-		if 'whom_types' in filters and filters['whom_types']:
+		if 'whom_types' in filters and filters['whom_types']: ## -- Queries in 'whom_type' column -- ##
 			query_data = query_data.filter(whom_type__in=filters['whom_types'])
 
 			## -- Search 'whom_id' only if 'whom_types' are defined as there can be conflict of ID's hence Type & ID together makes the whom data unique -- ##
-			if 'whom_ids' in filters and filters['whom_ids']:
-				query_data = query_data.filter(whom_type__in=filters['whom_ids'])
+			if 'whom_ids' in filters and filters['whom_ids']: ## -- Queries in 'whom_id' column -- ##
+				query_data = query_data.filter(whom_id__in=filters['whom_ids'])
 
 		if 'statuses' in filters and filters['statuses']:
 			query_data = query_data.filter(status__in=filters['statuses'])
