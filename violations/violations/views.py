@@ -171,9 +171,27 @@ def get_violations_data(filters={}):
 	list_params = ['vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_dates', 'violation_natures']
 
 	if 'vio_id' in filters: ## -- If Violation ID is defined, then get that Violation data -- ##
-			query_data = Violation.objects.filter(id=filters['vio_id'])
+		query_data = Violation.objects.filter(id=filters['vio_id'])
 	elif 'vio_date' in filters: ## -- If Violation date is defined, then get those Violation data -- ##
-			query_data = Violation.objects.filter(vio_date=filters['vio_date'])
+		'''
+			This 'vio_date' filter is converted to range form, down the line as the data stored in DB is in DateTime form, & since user is not specifying time,
+			so by default the filter on querying becomes YYYY-MM-DD 00:00:00.000.
+			Hence to avoid it, 'vio_date__range' is defined with (filters['vio_date'], filters['vio_date'] + 1 day)
+		'''
+
+		if '.' in filters['vio_date']: ## -- If date format is "YYYY.MM.DD" -- ##
+			date_format = "%Y.%m.%d"
+		elif '/' in filters['vio_date']: ## -- If date format is "YYYY/MM/DD" -- ##
+			date_format = "%Y/%m/%d"
+		else: ## -- date format is "YYYY-MM-DD" -- ##
+			date_format = "%Y-%m-%d"
+
+		date = datetime.strptime(filters['vio_date'], date_format)
+		filters['vio_date'] = datetime.strftime(date, date_format) ## -- Format to YYYY-MM-DD -- ##
+		modified_date = date + timedelta(days = 1)
+		extra_date = datetime.strftime(modified_date, date_format)
+
+		query_data = Violation.objects.filter(vio_date__range=[filters['vio_date'], extra_date])
 	elif filters and any (k in filters for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
 		query_data = Violation.objects
 		if 'vio_types' in filters and filters['vio_types']:
