@@ -509,6 +509,8 @@ class ViewActionData(APIView):
 
 			for data in json_data:
 				data['fields']['who_meta'] = eval(data['fields']['who_meta']) ## -- Convert string to JSON -- ##
+				if 'comment_id' in data['fields']['who_meta']:
+					data['comments'] = Comment.objects.filter(id=data['fields']['who_meta']['comment_id'])
 
 				data.pop('model') ## -- Pop/Remove certain details -- ##
 
