@@ -285,7 +285,7 @@ def get_violations_data(filters={}):
 
 		data.pop('model') ## -- Pop/Remove certain details -- ##
 
-	json_data['total_count'] = query_data.count() ## -- Get count to violations after applying all the filters -- ##
+	json_data.append({'total_count': query_data.count()}) ## -- Get count to violations after applying all the filters -- ##
 	response = {'data':json_data}
 
 	return {'response':response, 'status': status}
