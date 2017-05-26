@@ -511,7 +511,9 @@ class ViewActionData(APIView):
 				data['fields']['who_meta'] = eval(data['fields']['who_meta']) ## -- Convert string to JSON -- ##
 				data['fields']['what_meta'] = eval(data['fields']['what_meta']) ## -- Convert string to JSON -- ##
 				if 'comment_id' in data['fields']['what_meta']:
-					data['comments'] = Comment.objects.filter(id=data['fields']['who_meta']['comment_id'])
+					data['comments'] = json.loads(serializers.serialize("json", Comment.objects.filter(id=data['fields']['what_meta']['comment_id'])))
+					for comment_data in data['comments']:
+						comment_data.pop('model') ## -- Pop/Remove certain details -- ##		
 
 				data.pop('model') ## -- Pop/Remove certain details -- ##
 
