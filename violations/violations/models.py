@@ -3,9 +3,19 @@ from django.db import models
 from datetime import datetime
 from django.conf import settings
 from django.db.models.signals import post_save
-from django.contrib.postgres.fields import ArrayField
+from django.contrib.postgres.fields import HStoreField, ArrayField
 
-from types_vio.models import Type
+class Type(models.Model):
+	shortcode = models.CharField('ShortCode', max_length=50, unique=True) ## -- Slug / shortcode / quick-word for the Type -- ##
+	display = models.CharField('Display', max_length=50, blank=True, null=True) ## -- Front end display of the Type -- ##
+	severity = models.CharField('Severity', max_length=50, blank=True, null=True) ## -- Severity of the Type (high / medium / low) -- ##
+	group = models.CharField('Group', max_length=50, blank=True, null=True) ## -- Group the type comes under -- ##
+	configurable_counts	= models.TextField(max_length=2000) ## -- Minimum counts on a Type per Day / Person -- ##
+
+	class Meta:
+		app_label = 'violations'
+		#ordering = ('shortcode',) ## -- Order By 'shortcode' -- ##
+
 
 class Violation(models.Model):
 	vio_type = models.ForeignKey(Type, blank=True, null=True, default=None) ## -- Violation Type -- ##
@@ -26,3 +36,26 @@ class Violation(models.Model):
 	class Meta:
 		app_label = 'violations'
 		#ordering = ('shortcode',) ## -- Order By 'shortcode' -- ##
+
+
+class Comment(models.Model):
+	violation = models.ForeignKey(Violation, blank=True, null=True, default=None, related_name='comments')
+	who_id = models.IntegerField()
+	who_meta = models.TextField(max_length=1000)#ArrayField(models.CharField(max_length=500), blank=True)
+	comment = models.TextField('Comment', blank=True, null=True)
+	timestamp = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		app_label = 'violations'
+
+
+class Action(models.Model):
+	violation = models.ForeignKey(Violation, blank=True, null=True, default=None, related_name='actions')
+	who_id = models.IntegerField()
+	who_meta = models.TextField(max_length=2000)#ArrayField(models.CharField(max_length=500), blank=True)
+	what = models.CharField('What', max_length=50, blank=True, null=True)
+	what_meta = models.TextField(max_length=2000)#ArrayField(models.CharField(max_length=500), blank=True)
+	timestamp = models.DateTimeField(auto_now_add=True)
+
+	class Meta:
+		app_label = 'violations'
