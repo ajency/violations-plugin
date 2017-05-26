@@ -261,7 +261,7 @@ def get_violations_data(filters={}):
 	json_data = json.loads(serializers.serialize("json", sliced_data))
 
 	for data in json_data:
-		data['fields']['vio_date'] = datetime.strptime(data['fields']['vio_date'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime("%Y-%m-%d %H:%M:%S") ## -- Set to proper DateTime format -- ##
+		data['fields']['vio_date'] = (datetime.strptime(data['fields']['vio_date'], '%Y-%m-%dT%H:%M:%S.%fZ') + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M:%S") ## -- Increase Time by +5:30 and Set to proper DateTime format -- ##
 
 		data['fields']['vio_type'] = json.loads(serializers.serialize("json", Type.objects.filter(id=data['fields']['vio_type'])))[0] ## -- Get the Type details -- ##
 		data['fields']['vio_type'].pop('model')
