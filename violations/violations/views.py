@@ -246,7 +246,7 @@ def get_violations_data(filters={}):
 	if 'orderBy' in filters:
 		query_data = query_data.order_by(filters['orderBy']) ## -- Order the Violations data in that order -- ##
 	else:
-		query_data = query_data.order_by('vio_date') ## -- Order by Violation Date from old to new -- ##
+		query_data = query_data.order_by('-vio_date') ## -- Order by Violation Date from new to old -- ##
 
 	
 
