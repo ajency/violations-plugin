@@ -168,6 +168,7 @@ def get_violations_data(filters={}):
 
 	response = {}
 	status = 200
+	data_count = 0
 
 	list_params = ['vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_dates', 'violation_natures']
 
@@ -236,7 +237,7 @@ def get_violations_data(filters={}):
 			query_data = query_data.filter(violation_nature__in=filters['violation_natures'])
 
 	else: ## -- If no filters nor violation ID is defined, then get all the data -- ##
-		query_data = Violation.objects.filter(status='active')## -- Get oldest to new violations that are 'active'-- ##
+		query_data = Violation.objects.filter(status='active')## -- Get latest to oldest violations that are 'active'-- ##
 		# query_data = Violation.objects.all()
 	
 	### -- Format data to proper 'YYYY-MM-DD HH:MM:SS' Format -- ###
@@ -247,8 +248,6 @@ def get_violations_data(filters={}):
 		query_data = query_data.order_by(filters['orderBy']) ## -- Order the Violations data in that order -- ##
 	else:
 		query_data = query_data.order_by('-vio_date') ## -- Order by Violation Date from new to old -- ##
-
-	
 
 	if 'start' in filters and 'length' in filters: ## -- If Pagination is defined, i.e. start Point & number of data -- ##
 		start = filters['start']
@@ -262,7 +261,7 @@ def get_violations_data(filters={}):
 	json_data = json.loads(serializers.serialize("json", sliced_data))
 
 	for data in json_data:
-		data['fields']['vio_date'] = datetime.strptime(data['fields']['vio_date'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime("%Y-%m-%d %H:%M:%S") ## -- Set to proper DateTime format -- ##
+		data['fields']['vio_date'] = (datetime.strptime(data['fields']['vio_date'], '%Y-%m-%dT%H:%M:%S.%fZ') + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M:%S") ## -- Increase Time by +5:30 and Set to proper DateTime format -- ##
 
 		data['fields']['vio_type'] = json.loads(serializers.serialize("json", Type.objects.filter(id=data['fields']['vio_type'])))[0] ## -- Get the Type details -- ##
 		data['fields']['vio_type'].pop('model')
@@ -286,7 +285,7 @@ def get_violations_data(filters={}):
 
 		data.pop('model') ## -- Pop/Remove certain details -- ##
 
-	response = {'data':json_data}
+	response = {'data':json_data, 'total_count': query_data.count()} ## -- Get count to violations after applying all the filters -- ##
 
 	return {'response':response, 'status': status}
 
