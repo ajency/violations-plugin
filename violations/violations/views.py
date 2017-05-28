@@ -476,7 +476,6 @@ def action_serializer(data=None): ## -- Method called for saving/updating `Actio
 	response = {}
 	status=200
 
-	#import ipdb; ipdb.set_trace()
 	serializer = ActionSerializer(data=data)
 
 	if serializer.is_valid():
@@ -556,10 +555,17 @@ def comment_serializer(data=None): ## -- Method called for saving/updating `Comm
 	response = {}
 	status=200
 
+	if 'vio_id' in data:
+		data['violation_id'] = data['vio_id']
+
 	serializer = CommentSerializer(data=data)
 
 	if serializer.is_valid():
-		serializer.save()
+		comment_obj = serializer.save()
+
+		### -- If a User has commented on a Violation, then add it to the Action Table & link it to the Violation & Comment -- ###
+		data = {"vio_id":serializer.validated_data['violation_id'], "who_id":serializer.validated_data['who_id'], "who_meta":serializer.validated_data['who_meta'], "what":"Violation Comment", "what_meta":{"comment_id": comment_obj.id, "approved": "Yes"}}
+		action_resp = action_serializer(data)
 		
 		response['message'] = serializer.data
 		status = 201
@@ -619,9 +625,6 @@ class SetCommentData(APIView):
 			data = json.loads(request.body)
 		else:
 			data = {}
-
-		if 'vio_id' in data:
-			data['violation_id'] = data['vio_id']
 
 		resp = comment_serializer(data=data)
 		response = resp['response']
