@@ -149,7 +149,7 @@ def violation_serializer(data=None): ## -- Method called for saving/updating `Vi
 			serializer.update(serializer.validated_data['instance'], serializer.data) ## -- <Class>.update(<Model/DB_Object_dict>, {Validated_data}) -- ##
 			status = 200
 		else:
-			serializer.save()
+			violation_object = serializer.save()
 			try:
 				violation_type = violation_object.vio_type.display
 				violationdate = violation_object.vio_date.strftime('%d %b %Y')
@@ -649,28 +649,6 @@ class SetCommentData(APIView):
 		
 		return JsonResponse(response, status=status)
 
-
-def get_violationmail_connection():
-	from django.core.mail import get_connection
-
-	SEC_EMAIL_USE_TLS = False
-	SEC_EMAIL_HOST = 'localhost'
-	SEC_EMAIL_HOST_USER = ''
-	SEC_EMAIL_HOST_PASSWORD = ''
-	SEC_EMAIL_PORT = 25
-	SEC_EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-
-
-	connection = get_connection(
-					backend=SEC_EMAIL_BACKEND,
-					host=SEC_EMAIL_HOST,
-					port=SEC_EMAIL_PORT,
-					username=SEC_EMAIL_HOST_USER,
-					password=SEC_EMAIL_HOST_PASSWORD,
-					use_tls=SEC_EMAIL_USE_TLS
-				)
-	return connection
-
 ## -- Email function on Violation -- ##
 def violation_mail_send(subject, to, cc, context={}, from_email="communications@weddingz-mail.in", content_subtype="html"):
 	from django.core.mail import EmailMessage
@@ -717,5 +695,5 @@ def get_violationmail_connection():
 	return connection
 
 def create_email_template(context):
-	html = 'Dear User,<br>You have just violated one of Weddingz core processes.Please see the details: <br>Type:'+context['type']+'<br>Description:'+context['description']+'<br>Date:'+context['date']+'<br> Thanks <br> QC Team'
+	html = 'Dear User,<br>You have just violated one of Weddingz core processes.Please see the details: <br>Type:'+context['type']+'<br>Date:'+context['date']+'<br> Thanks <br> QC Team'
 	return html
