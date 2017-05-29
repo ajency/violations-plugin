@@ -654,16 +654,26 @@ def get_violationmail_connection():
 				)
 	return connection
 
-def violation_mail_send(subject, to, cc, template, context={},attachments=[], from_email="communications@weddingz-mail.in", content_subtype="html"):
+## -- Email function on Violation -- ##
+def violation_mail_send(subject, to, cc, context={}, from_email="communications@weddingz-mail.in", content_subtype="html"):
+	from django.core.mail import EmailMessage
 	try:
+		context = {
+			'type':'',
+			'description':'',
+			'date':''
+		}
+
 		connection = get_violationmail_connection()
 
+		body = create_email_template(context)
+
 		email = EmailMessage(
-					subject=subject, 
-					body=email_content,
-					from_email=from_email,
-					to=to,cc=cc,
-					connection=connection)
+		subject=subject, 
+		body=body,
+		from_email=from_email,
+		to=to,cc=cc,
+		connection=connection)
 
 		email.content_subtype = content_subtype
 		email.send()
@@ -671,3 +681,28 @@ def violation_mail_send(subject, to, cc, template, context={},attachments=[], fr
 	except BaseException, e:
 		# print e
 		pass
+
+def get_violationmail_connection():
+	from django.core.mail import get_connection
+
+	SEC_EMAIL_USE_TLS = False
+	SEC_EMAIL_HOST = 'localhost'
+	SEC_EMAIL_HOST_USER = ''
+	SEC_EMAIL_HOST_PASSWORD = ''
+	SEC_EMAIL_PORT = 25
+	SEC_EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+
+	connection = get_connection(
+		backend=SEC_EMAIL_BACKEND,
+		host=SEC_EMAIL_HOST,
+		port=SEC_EMAIL_PORT,
+		username=SEC_EMAIL_HOST_USER,
+		password=SEC_EMAIL_HOST_PASSWORD,
+		use_tls=SEC_EMAIL_USE_TLS
+	)
+	return connection
+
+def create_email_template(context):
+	html = 'Dear User,<br>You have just violated one of Weddingz core processes.Please see the details: <br>Type:'+context['type']+'<br>Description:'+context['description']+'<br>Date:'+context['date']+'<br> Thanks <br> QC Team'
+	return html
