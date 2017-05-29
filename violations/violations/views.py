@@ -677,12 +677,6 @@ def violation_mail_send(subject, to, cc, context={}, from_email="communications@
 	to = ['velantan@ajency.in']
 	cc = ['sumithra@ajency.in']
 	try:
-		context = {
-			'type':'',
-			'description':'',
-			'date':''
-		}
-
 		connection = get_violationmail_connection()
 
 		body = create_email_template(context)
