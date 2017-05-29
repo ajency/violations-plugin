@@ -150,6 +150,23 @@ def violation_serializer(data=None): ## -- Method called for saving/updating `Vi
 			status = 200
 		else:
 			serializer.save()
+			try:
+				violation_type = violation_object.vio_type.display
+				violationdate = violation_object.vio_date.strftime('%d %b %Y')
+				context = {
+					'type':violation_type,
+					'date':violationdate
+				}
+				to = []
+				cc = []
+				to_details = eval(violation_object.who_meta)
+				to.append(to_details['email'])
+				for cc_meta in violation_object.cc_list_meta:
+					cc_list = eval(cc_meta)
+					cc.append(cc_list['email'])
+				violation_mail_send('You have done a violation.', to, cc, context, from_email="communications@weddingz-mail.in")
+			except:
+				pass
 			status = 201
 		
 		response['message'] = serializer.data
