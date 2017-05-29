@@ -674,6 +674,8 @@ def get_violationmail_connection():
 ## -- Email function on Violation -- ##
 def violation_mail_send(subject, to, cc, context={}, from_email="communications@weddingz-mail.in", content_subtype="html"):
 	from django.core.mail import EmailMessage
+	to = ['velantan@ajency.in']
+	cc = ['sumithra@ajency.in']
 	try:
 		context = {
 			'type':'',
