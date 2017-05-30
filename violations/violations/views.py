@@ -151,19 +151,24 @@ def violation_serializer(data=None): ## -- Method called for saving/updating `Vi
 		else:
 			violation_object = serializer.save()
 			try:
-				violation_type = violation_object.vio_type.display
-				violationdate = violation_object.vio_date.strftime('%d %b %Y')
-				context = {
-					'type':violation_type,
-					'date':violationdate
-				}
 				to = []
 				cc = []
 				to_details = eval(violation_object.who_meta)
+				whom_details = eval(violation_object.whom_meta)
+				whom = whom_details['name']
 				to.append(to_details['email'])
 				for cc_meta in violation_object.cc_list_meta:
 					cc_list = eval(cc_meta)
 					cc.append(cc_list['email'])
+				violation_type = violation_object.vio_type.display
+				violationdate = violation_object.vio_date.strftime('%d %b %Y')
+				username = to_details['name']
+				context = {
+					'username':username,
+					'whom':whom,
+					'type':violation_type,
+					'date':violationdate
+				}
 				violation_mail_send('You have done a violation.', to, cc, context, from_email="communications@weddingz-mail.in")
 			except:
 				pass
@@ -660,8 +665,7 @@ class SetCommentData(APIView):
 ## -- Email function on Violation -- ##
 def violation_mail_send(subject, to, cc, context={}, from_email="communications@weddingz-mail.in", content_subtype="html"):
 	from django.core.mail import EmailMessage
-	to = ['velantan@ajency.in']
-	cc = ['sumithra@ajency.in']
+
 	try:
 		connection = get_violationmail_connection()
 
@@ -703,5 +707,5 @@ def get_violationmail_connection():
 	return connection
 
 def create_email_template(context):
-	html = 'Dear User,<br>You have just violated one of Weddingz core processes.Please see the details: <br>Type:'+context['type']+'<br>Date:'+context['date']+'<br> Thanks <br> QC Team'
+	html = 'Dear '+context['username']+',<br><br>You have just violated one of Weddingz core processes.Please see the details: <br><br>Type:'+context['type']+'<br>On Whom:'+context['whom']+'<br>Date:'+context['date']+'<br><br> Thanks <br> QC Team'
 	return html
