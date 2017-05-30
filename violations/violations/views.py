@@ -515,15 +515,23 @@ class ViewActionData(APIView):
 		API to view `Action` of respective Violations
 	'''
 	def get(self, request, *args, **kwargs):
+		from datetime import datetime, timedelta
+
 		response = {}
 		status = 200
 		
 		if 'vio_id' in request.GET:
 			query_data = Action.objects.filter(violation__id=request.GET.get('vio_id'))
 
+			if 'sortBy' in request.GET:
+				query_data = query_data.order_by(request.GET.get('sortBy'))
+			else:
+				query_data = query_data.order_by('-timestamp')
+
 			json_data = json.loads(serializers.serialize("json", query_data))
 
 			for data in json_data:
+				data['fields']['timestamp'] = (datetime.strptime(data['fields']['timestamp'], '%Y-%m-%dT%H:%M:%S.%fZ') + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M:%S") ## -- Increase Time by +5:30 and Set to proper DateTime format -- ##
 				data['fields']['who_meta'] = eval(data['fields']['who_meta']) ## -- Convert string to JSON -- ##
 				data['fields']['what_meta'] = eval(data['fields']['what_meta']) ## -- Convert string to JSON -- ##
 				if 'comment_id' in data['fields']['what_meta']:
