@@ -178,21 +178,21 @@ class ActionSerializer(serializers.Serializer):
 				'status': 417, ## -- Expectation Failed -- ##
 				'message': "'vio_id', 'who_id', 'what' and 'what_meta' parameters are required"
 			})
-		else:
-			data_obj = Action.objects.filter(violation__id=data['vio_id'], who_id=data['who_id'], what=data['what'])
+		# else:
+		# 	data_obj = Action.objects.filter(violation__id=data['vio_id'], who_id=data['who_id'], what=data['what'])
 			
-			if data_obj.exists():
-				raise serializers.ValidationError({
-					'status': 409, ## -- Conflict -- ##
-					'message': 'This user already taken an action on this violation'
-				})
+		# 	if data_obj.exists():
+		# 		raise serializers.ValidationError({
+		# 			'status': 409, ## -- Conflict -- ##
+		# 			'message': 'This user already taken an action on this violation'
+		# 		})
 		return data
 
 	def create(self, validated_data):
 		"""
 		Create and return a new `Action` instance, given the validated data.
 		"""
-		violation_data = Violation.objects.get(id=validated_data.pop('vio_id')) ## -- Get Violation Details using Vioaltion ID -- ##
+		violation_data = Violation.objects.get(id=validated_data.pop('vio_id')) ## -- Get Violation Details using Violation ID -- ##
 		return Action.objects.create(violation=violation_data, **validated_data)
 
 	def update(self, instance, validated_data):
