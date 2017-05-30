@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: django-violations
-Version: 1.4.24
+Version: 1.4.25
 Summary: A simple Django app to maintain violation records.
 Home-page: http://www.weddingz.in/
 Author: Sharath Sreekumar

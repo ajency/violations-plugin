@@ -699,5 +699,5 @@ def get_violationmail_connection():
 	return connection
 
 def create_email_template(context):
-	html = 'Dear '+context['username']+',<br><br>You have just violated one of Weddingz core processes.Please see the details: <br><br>Type:'+context['type']+'On Whom:'+context['whom']+'<br>Date:'+context['date']+'<br><br> Thanks <br> QC Team'
+	html = 'Dear '+context['username']+',<br><br>You have just violated one of Weddingz core processes.Please see the details: <br><br>Type:'+context['type']+'<br>On Whom:'+context['whom']+'<br>Date:'+context['date']+'<br><br> Thanks <br> QC Team'
 	return html
