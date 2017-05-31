@@ -219,7 +219,7 @@ def get_violations_data(filters={}):
 
 		query_data = Violation.objects.filter(vio_date__range=[filters['vio_date'], extra_date])
 	elif filters and any (k in filters for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
-		action_filter_keys = ['who_ids','who_metas', 'what_types', 'what_metas']
+		action_filter_keys = ['who_ids', 'what_types']# , 'who_metas', 'what_metas']
 		
 		query_data = Violation.objects.all()
 		if 'vio_ids' in filters and filters['vio_ids']:
@@ -230,17 +230,21 @@ def get_violations_data(filters={}):
 			action = Action.objects.all()
 			query_flag = False
 
-			if 'who_metas' in filters['action_filters'] and filters['action_filters']['who_metas']: ## -- If the filter is defined for who_meta then search under 'who_meta' -- ##
-				for val in filters['action_filters']['who_metas']:
-					action = action.filter(who_meta__contains=val)
+			# if 'who_metas' in filters['action_filters'] and filters['action_filters']['who_metas']: ## -- If the filter is defined for who_meta then search under 'who_meta' -- ##
+			# 	for val in filters['action_filters']['who_metas']:
+			# 		action = action.filter(who_meta__contains=val)
+			# 	query_flag = True
+
+			# if 'what_metas' in filters['action_filters'] and filters['action_filters']['what_metas']: ## -- If the filter is defined for what_meta then search under 'what_meta' -- ##
+			# 	for val in filters['action_filters']['what_metas']:
+			# 		action = action.filter(what_meta__contains=val)
+			# 	query_flag = True
+
+			if 'who_ids' in filters['action_filters'] and filters['action_filters']['who_ids']:
+				action = action.filter(who_id__in=filters['action_filters']['who_ids'])
 				query_flag = True
 
-			elif 'what_metas' in filters['action_filters'] and filters['action_filters']['what_metas']: ## -- If the filter is defined for what_meta then search under 'what_meta' -- ##
-				for val in filters['action_filters']['what_metas']:
-					action = action.filter(what_meta__contains=val)
-				query_flag = True
-
-			elif 'what_types' in filters['action_filters'] and filters['action_filters']['what_types']: ## -- If the filter is defined for what_types then search under 'what' -- ##
+			if 'what_types' in filters['action_filters'] and filters['action_filters']['what_types']: ## -- If the filter is defined for what_types then search under 'what' -- ##
 				action = action.filter(what__in=filters['action_filters']['what_types'])
 				query_flag = True
 
