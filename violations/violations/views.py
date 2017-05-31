@@ -156,6 +156,7 @@ def violation_serializer(data=None): ## -- Method called for saving/updating `Vi
 				to_details = eval(violation_object.who_meta)
 				whom_details = eval(violation_object.whom_meta)
 				whom = whom_details['name']
+				customer_link = whom_details.get('user_url','')
 				to.append(to_details['email'])
 				for cc_meta in violation_object.cc_list_meta:
 					cc_list = eval(cc_meta)
@@ -167,7 +168,8 @@ def violation_serializer(data=None): ## -- Method called for saving/updating `Vi
 					'username':username,
 					'whom':whom,
 					'type':violation_type,
-					'date':violationdate
+					'date':violationdate,
+					'customer_link':customer_link
 				}
 				violation_mail_send('You have done a violation.', to, cc, context, from_email="communications@weddingz-mail.in")
 			except:
@@ -709,5 +711,5 @@ def get_violationmail_connection():
 	return connection
 
 def create_email_template(context):
-	html = 'Dear '+context['username']+',<br><br>You have just violated one of Weddingz core processes.Please see the details: <br><br>Type:'+context['type']+'<br>On Whom:'+context['whom']+'<br>Date:'+context['date']+'<br><br> Thanks <br> QC Team'
+	html = 'Customer Link: '+context['customer_link']+'<br><br>Dear '+context['username']+',<br><br>You have just violated one of Weddingz core processes.Please see the details: <br><br>Type:'+context['type']+'<br>On Whom:'+context['whom']+'<br>Date:'+context['date']+'<br><br> Thanks <br> QC Team'
 	return html
