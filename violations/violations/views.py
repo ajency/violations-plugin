@@ -231,17 +231,17 @@ def get_violations_data(filters={}):
 			query_flag = False
 
 			if 'who_metas' in filters['action_filters']: ## -- If the filter is defined for who_meta then search under 'who_meta' -- ##
-				for val in filters['action_filters']['who_meta']:
+				for val in filters['action_filters']['who_metas']:
 					action = action.filter(who_meta__contains=val)
 				query_flag = True
 
 			elif 'what_metas' in filters['action_filters']: ## -- If the filter is defined for what_meta then search under 'what_meta' -- ##
-				for val in filters['action_filters']['what_meta']:
+				for val in filters['action_filters']['what_metas']:
 					action = action.filter(what_meta__contains=val)
 				query_flag = True
 
 			elif 'what_types' in filters['action_filters']: ## -- If the filter is defined for what_types then search under 'what' -- ##
-				action = action.filter(what__in=filters['action_filters']['what_type'])
+				action = action.filter(what__in=filters['action_filters']['what_types'])
 				query_flag = True
 
 			if query_flag is True: ## -- If the flag is True, & size is greater than 0, then the value is defined -- ##
