@@ -630,7 +630,7 @@ def comment_serializer(data=None): ## -- Method called for saving/updating `Comm
 		comment_obj = serializer.save()
 
 		### -- If a User has commented on a Violation, then add it to the Action Table & link it to the Violation & Comment -- ###
-		data = {"vio_id":serializer.validated_data['violation_id'], "who_id":serializer.validated_data['who_id'], "who_meta":serializer.validated_data['who_meta'], "what":"Violation Comment", "what_meta":{"comment_id": comment_obj.id}}
+		data = {"vio_id":serializer.validated_data['violation_id'], "who_id":serializer.validated_data['who_id'], "who_meta":serializer.validated_data['who_meta'], "what":"Violation Comment - action by " + eval(serializer.validated_data['who_meta'])['vio_role'] if 'vio_role' in eval(serializer.validated_data['who_meta']) else '-', "what_meta":{"comment_id": comment_obj.id}}
 		action_resp = action_serializer(data)
 		
 		response['message'] = serializer.data
