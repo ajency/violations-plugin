@@ -244,7 +244,7 @@ def get_violations_data(filters={}):
 				action = action.filter(what__in=filters['action_filters']['what_type'])
 				query_flag = True
 
-			if query_flag = True: ## -- If the flag is True, & size is greater than 0, then the value is defined -- ##
+			if query_flag is True: ## -- If the flag is True, & size is greater than 0, then the value is defined -- ##
 				action_vio_ids = [val['violation_id'] for val in action.values('violation_id')]
 				query_data = query_data.filter(id__in=action_vio_ids)
 
