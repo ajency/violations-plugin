@@ -194,7 +194,7 @@ def get_violations_data(filters={}):
 	status = 200
 	data_count = 0
 
-	list_params = ['vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_dates', 'violation_natures']
+	list_params = ['vio_ids', 'vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_dates', 'violation_natures']
 
 	if 'vio_id' in filters: ## -- If Violation ID is defined, then get that Violation data -- ##
 		query_data = Violation.objects.filter(id=filters['vio_id'])
@@ -220,6 +220,28 @@ def get_violations_data(filters={}):
 		query_data = Violation.objects.filter(vio_date__range=[filters['vio_date'], extra_date])
 	elif filters and any (k in filters for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
 		query_data = Violation.objects.all()
+		if 'vio_ids' in filters and filters['vio_ids']:
+			query_data = query_data.filter(id__in=filters['vio_ids'])
+
+		if 'action_filters' in filters and 'action_type' in filters['action_filters'] and 'action_meta' in filters['action_filters']: ## -- If any action filters are implemented -- ##
+		#if 'action_filters' in filters and filters['action_filters']:
+			action = Action.objects.all()
+
+			if filters['action_filters']['action_type'] == 'who_meta': ## -- If the filter is defined for who_meta then search under 'who_meta' -- ##
+				for val in filters['action_filters']['action_meta']:
+					action = action.filter(who_meta__contains=val)
+
+			elif filters['action_filters']['action_type'] == 'what_meta': ## -- If the filter is defined for what_meta then search under 'what_meta' -- ##
+				for val in filters['action_filters']['action_meta']:
+					action = action.filter(what_meta__contains=val)
+
+			elif filters['action_filters']['action_type'] == 'what_id': ## -- If the filter is defined for what_id then search under 'what_id' -- ##
+				action = action.filter(what_id__in=filters['action_filters']['action_meta'])
+
+			if filters['action_filters']['action_meta']: ## -- If the 'action_meta' is not empty -- ##
+				action_vio_ids = [val['violation_id'] for val in action.values('violation_id')]
+				query_data = query_data.filter(id__in=action_vio_ids)
+
 		if 'vio_types' in filters and filters['vio_types']:
 			query_data = query_data.filter(vio_type__shortcode__in=filters['vio_types'])
 
