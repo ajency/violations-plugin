@@ -194,7 +194,7 @@ def get_violations_data(filters={}):
 	status = 200
 	data_count = 0
 
-	list_params = ['vio_ids', 'vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_dates', 'violation_natures']
+	list_params = ['vio_ids', 'action_filters', 'vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_dates', 'violation_natures']
 
 	if 'vio_id' in filters: ## -- If Violation ID is defined, then get that Violation data -- ##
 		query_data = Violation.objects.filter(id=filters['vio_id'])
@@ -359,11 +359,17 @@ class ViolationData(APIView):
 		response = {}
 		status = 200
 
-		list_params = ['vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_date', 'violation_natures']
+		list_params = ['vio_ids', 'action_filters', 'vio_types', 'vio_type_severities', 'who_ids', 'who_types', 'whom_types', 'statuses', 'vio_date', 'violation_natures']
 		
 		if 'vio_id' in request.GET: ## -- If Violation ID is defined, then get that Violation data -- ##
 			filters['vio_id'] = request.GET.get('vio_id')
 		elif request.GET and any (k in request.GET for k in list_params): ## -- If any of the above filters exist in params, then enter this condition-- ##
+			if 'vio_ids' in request.GET and eval(request.GET.get('vio_ids')):
+				filters['vio_ids'] = eval(request.GET.get('vio_ids'))
+
+			if 'action_filters' in request.GET and eval(request.GET.get('action_filters')):
+				filters['action_filters'] = eval(request.GET.get('action_filters'))
+
 			if 'vio_types' in request.GET and eval(request.GET.get('vio_types')):
 				filters['vio_types'] = eval(request.GET.get('vio_types'))
 
