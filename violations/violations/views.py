@@ -189,6 +189,7 @@ def violation_serializer(data=None): ## -- Method called for saving/updating `Vi
 
 def get_violations_data(filters={}):
 	from datetime import datetime, timedelta
+	from django.db.models import Q
 
 	response = {}
 	status = 200
@@ -227,6 +228,8 @@ def get_violations_data(filters={}):
 
 		if 'action_filters' in filters and any (k in filters['action_filters'] for k in action_filter_keys): ## -- If any action filters are implemented -- ##
 		#if 'action_filters' in filters and filters['action_filters']:
+			violation_vio_ids = [val['id'] for val in query_data.values('id')] ## -- Get all the IDs of the queried violation -- ##
+
 			action = Action.objects.all()
 			query_flag = False
 
@@ -240,16 +243,26 @@ def get_violations_data(filters={}):
 			# 		action = action.filter(what_meta__contains=val)
 			# 	query_flag = True
 
+			action_vio_ids = []
+			
 			if 'who_ids' in filters['action_filters'] and filters['action_filters']['who_ids']:
 				action = action.filter(who_id__in=filters['action_filters']['who_ids'])
+				action_vio_ids = [val['violation_id'] for val in action.values('violation_id')]
 				query_flag = True
 
 			if 'what_types' in filters['action_filters'] and filters['action_filters']['what_types']: ## -- If the filter is defined for what_types then search under 'what' -- ##
-				action = action.filter(what__in=filters['action_filters']['what_types'])
-				query_flag = True
+				for data in filters['action_filters']['what_types']:
+					if all ( k in data for k in ['key', 'query_form']): ## if both the params exist, then execute the if condition
+						if '+ve' in data['query_form']:
+							action = action.filter(Q(what=data['key']))
+							action_vio_ids = list(set(action_vio_ids).union([val['violation_id'] for val in action.values('violation_id')])) ## X = [X U B]
+							query_flag = True
+						elif '-ve' in data['query_form']:
+							action = action.filter(Q(what=data['key']))
+							action_vio_ids = list(set(action_vio_ids).union(set(violation_vio_ids).difference([val['violation_id'] for val in action.values('violation_id')]))) ## X = [ X U (A - B) ]
+							query_flag = True
 
 			if query_flag is True: ## -- If the flag is True, & size is greater than 0, then the value is defined -- ##
-				action_vio_ids = [val['violation_id'] for val in action.values('violation_id')]
 				query_data = query_data.filter(id__in=action_vio_ids)
 
 		if 'vio_types' in filters and filters['vio_types']:
